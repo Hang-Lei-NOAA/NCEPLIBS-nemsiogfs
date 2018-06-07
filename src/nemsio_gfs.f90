@@ -16,6 +16,8 @@ module nemsio_gfs
 !   2015-12-31 S Moorthi :  create _slg versions of routines without p, dp and vvel
 !   2016-01-12 S Moorthi :  remove _slg versions and add nopdpvv option to exclude dp, p
 !   2016-04-25 Jun Wang  :  use meta data header to decide which fields are read/written 
+!   2017-03-22 Hang Lei  :  add surface variables and create flux functions and variables
+!   2018-06-06 Hang Lei  :  add five more tracers
 !
 ! Public Defined Types
 !   nemsio_head        nemsio file header information
@@ -637,6 +639,12 @@ contains
       gfsheadv%RECNAME((3+3*levso):(2+4*levso)) = 'spfh'
       gfsheadv%RECNAME((3+4*levso):(2+5*levso)) = 'o3mr'
       gfsheadv%RECNAME((3+5*levso):(2+6*levso)) = 'clwmr'
+!-----add tracers-----------
+      gfsheadv%RECNAME((3+6*levso):(2+7*levso)) = 'rwmr'
+      gfsheadv%RECNAME((3+7*levso):(2+8*levso)) = 'icmr'
+      gfsheadv%RECNAME((3+8*levso):(2+9*levso)) = 'snwr'
+      gfsheadv%RECNAME((3+9*levso):(2+10*levso)) = 'dzdt'
+      gfsheadv%RECNAME((3+10*levso):(2+11*levso)) = 'delz'
       do i=1,gfshead%ntrac-3
         gfsheadv%RECNAME((3+(i+5)*levso):(2+(i+6)*levso)) = aero_tracername(i)
       enddo
@@ -653,6 +661,12 @@ contains
       gfsheadv%RECNAME((3+5*levso):(2+6*levso)) = 'spfh'
       gfsheadv%RECNAME((3+6*levso):(2+7*levso)) = 'o3mr'
       gfsheadv%RECNAME((3+7*levso):(2+8*levso)) = 'clwmr'
+!-----add tracers-----------
+      gfsheadv%RECNAME((3+8*levso):(2+9*levso)) = 'rwmr'
+      gfsheadv%RECNAME((3+9*levso):(2+10*levso)) = 'icmr'
+      gfsheadv%RECNAME((3+10*levso):(2+11*levso)) = 'snwr'
+      gfsheadv%RECNAME((3+11*levso):(2+12*levso)) = 'dzdt'
+      gfsheadv%RECNAME((3+12*levso):(2+13*levso)) = 'delz'
       do i=1,gfshead%ntrac-3
         gfsheadv%RECNAME((3+(i+7)*levso):(2+(i+8)*levso)) = aero_tracername(i)
       enddo
@@ -5692,6 +5706,83 @@ contains
         endif
       enddo
     endif
+!rwmr
+    call nemsio_searchrecv(gfile,jrec,'rwmr','mid layer',1,ierr)
+    if(ierr == 0 ) then
+      do l=1,lm
+        call nemsio_readrecv(gfile,'rwmr','mid layer',l,tmp,iret=ierr)
+        if(ierr == 0) then
+          lrec = lrec+1
+          nemsiodbta%q(:,:,l,ntoz) = reshape(tmp,(/im,jm/) )
+          ntrclev = ntrclev + 1
+        else
+          if(present(iret)) iret = ierr
+          print *, 'ERROR in rdgrd (t), iret=', ierr
+        endif
+      enddo
+    endif
+!
+!icmr
+    call nemsio_searchrecv(gfile,jrec,'icmr','mid layer',1,ierr)
+    if(ierr == 0 ) then
+      do l=1,lm
+        call nemsio_readrecv(gfile,'icmr','mid layer',l,tmp,iret=ierr)
+        if(ierr == 0) then
+          lrec = lrec+1
+          nemsiodbta%q(:,:,l,ntcw) = reshape(tmp,(/im,jm/) )
+          ntrclev = ntrclev + 1
+        else
+          if(present(iret)) iret = ierr
+          print *, 'ERROR in rdgrd (t), iret=', ierr
+        endif
+      enddo
+    endif
+!snwr
+    call nemsio_searchrecv(gfile,jrec,'snwr','mid layer',1,ierr)
+    if(ierr == 0 ) then
+      do l=1,lm
+        call nemsio_readrecv(gfile,'snwr','mid layer',l,tmp,iret=ierr)
+        if(ierr == 0) then
+          lrec = lrec+1
+          nemsiodbta%q(:,:,l,ntoz) = reshape(tmp,(/im,jm/) )
+          ntrclev = ntrclev + 1
+        else
+          if(present(iret)) iret = ierr
+          print *, 'ERROR in rdgrd (t), iret=', ierr
+        endif
+      enddo
+    endif
+!
+!dzdt
+    call nemsio_searchrecv(gfile,jrec,'dzdt','mid layer',1,ierr)
+    if(ierr == 0 ) then
+      do l=1,lm
+        call nemsio_readrecv(gfile,'dzdt','mid layer',l,tmp,iret=ierr)
+        if(ierr == 0) then
+          lrec = lrec+1
+          nemsiodbta%q(:,:,l,ntcw) = reshape(tmp,(/im,jm/) )
+          ntrclev = ntrclev + 1
+        else
+          if(present(iret)) iret = ierr
+          print *, 'ERROR in rdgrd (t), iret=', ierr
+        endif
+      enddo
+    endif
+!delz
+    call nemsio_searchrecv(gfile,jrec,'delz','mid layer',1,ierr)
+    if(ierr == 0 ) then
+      do l=1,lm
+        call nemsio_readrecv(gfile,'delz','mid layer',l,tmp,iret=ierr)
+        if(ierr == 0) then
+          lrec = lrec+1
+          nemsiodbta%q(:,:,l,ntcw) = reshape(tmp,(/im,jm/) )
+          ntrclev = ntrclev + 1
+        else
+          if(present(iret)) iret = ierr
+          print *, 'ERROR in rdgrd (t), iret=', ierr
+        endif
+      enddo
+    endif
 !
 !tke
     if (ntke > 0) then
@@ -5923,6 +6014,78 @@ contains
         endif
       enddo
     endif
+!rwmr
+    call nemsio_searchrecv(gfile,jrec,'rwmr','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        call nemsio_readrecv(gfile,'rwmr','mid layer',l,tmp,iret=ierr)
+        if(ierr == 0) then
+          nemsiodata%q(:,:,l,ntoz) = reshape(tmp,(/im,jm/) )
+          ntrclev = ntrclev + 1
+        else
+          if(present(iret)) iret = ierr
+          print *, 'ERROR in rdgrd (t), iret=', ierr
+        endif
+      enddo
+    endif
+!
+!icmr
+    call nemsio_searchrecv(gfile,jrec,'icmr','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        call nemsio_readrecv(gfile,'icmr','mid layer',l,tmp,iret=ierr)
+        if(ierr == 0) then
+          nemsiodata%q(:,:,l,ntcw) = reshape(tmp,(/im,jm/) )
+          ntrclev = ntrclev + 1
+        else
+          if(present(iret)) iret = ierr
+          print *, 'ERROR in rdgrd (t), iret=', ierr
+        endif
+      enddo
+    endif
+!snwr
+    call nemsio_searchrecv(gfile,jrec,'snwr','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        call nemsio_readrecv(gfile,'snwr','mid layer',l,tmp,iret=ierr)
+        if(ierr == 0) then
+          nemsiodata%q(:,:,l,ntoz) = reshape(tmp,(/im,jm/) )
+          ntrclev = ntrclev + 1
+        else
+          if(present(iret)) iret = ierr
+          print *, 'ERROR in rdgrd (t), iret=', ierr
+        endif
+      enddo
+    endif
+!
+!dzdt
+    call nemsio_searchrecv(gfile,jrec,'dzdt','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        call nemsio_readrecv(gfile,'dzdt','mid layer',l,tmp,iret=ierr)
+        if(ierr == 0) then
+          nemsiodata%q(:,:,l,ntcw) = reshape(tmp,(/im,jm/) )
+          ntrclev = ntrclev + 1
+        else
+          if(present(iret)) iret = ierr
+          print *, 'ERROR in rdgrd (t), iret=', ierr
+        endif
+      enddo
+    endif
+!delz
+    call nemsio_searchrecv(gfile,jrec,'delz','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        call nemsio_readrecv(gfile,'delz','mid layer',l,tmp,iret=ierr)
+        if(ierr == 0) then
+          nemsiodata%q(:,:,l,ntcw) = reshape(tmp,(/im,jm/) )
+          ntrclev = ntrclev + 1
+        else
+          if(present(iret)) iret = ierr
+          print *, 'ERROR in rdgrd (t), iret=', ierr
+        endif
+      enddo
+    endif
 !
 !tke
     if (ntke > 0) then
@@ -6140,6 +6303,66 @@ contains
         endif
       enddo
     endif
+!rwmr
+    call nemsio_searchrecv(gfile,jrec,'rwmr','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        tmp = reshape(nemsiodbta%q(:,:,l,ntoz),(/fieldsize/) )
+        call nemsio_writerecv(gfile,'rwmr','mid layer',l,tmp,iret=ierr)
+        if(ierr /= 0) then
+          if(present(iret)) iret = ierr
+          print *,'write l=',l,'rwmr,ierr=',ierr
+        endif
+      enddo
+    endif
+!icmr
+    call nemsio_searchrecv(gfile,jrec,'icmr','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        tmp = reshape(nemsiodbta%q(:,:,l,ntcw),(/fieldsize/) )
+        call nemsio_writerecv(gfile,'icmr','mid layer',l,tmp,iret=ierr)
+        if(ierr /= 0) then
+          if(present(iret)) iret = ierr
+          print *,'write l=',l,' icmr,ierr=',ierr
+        endif
+      enddo
+    endif
+!snw
+    call nemsio_searchrecv(gfile,jrec,'snwr','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        tmp = reshape(nemsiodbta%q(:,:,l,ntoz),(/fieldsize/) )
+        call nemsio_writerecv(gfile,'snwr','mid layer',l,tmp,iret=ierr)
+        if(ierr /= 0) then
+          if(present(iret)) iret = ierr
+          print *,'write l=',l,'snwr,ierr=',ierr
+        endif
+      enddo
+    endif
+!dzdt
+    call nemsio_searchrecv(gfile,jrec,'dzdt','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        tmp = reshape(nemsiodbta%q(:,:,l,ntcw),(/fieldsize/) )
+        call nemsio_writerecv(gfile,'dzdt','mid layer',l,tmp,iret=ierr)
+        if(ierr /= 0) then
+          if(present(iret)) iret = ierr
+          print *,'write l=',l,' dzdt,ierr=',ierr
+        endif
+      enddo
+    endif
+!delz
+    call nemsio_searchrecv(gfile,jrec,'delz','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        tmp = reshape(nemsiodbta%q(:,:,l,ntcw),(/fieldsize/) )
+        call nemsio_writerecv(gfile,'delz','mid layer',l,tmp,iret=ierr)
+        if(ierr /= 0) then
+          if(present(iret)) iret = ierr
+          print *,'write l=',l,' delz,ierr=',ierr
+        endif
+      enddo
+    endif
 !
 !tke
     if (ntke > 0) then
@@ -6351,6 +6574,66 @@ contains
         if(ierr /= 0) then
           if(present(iret)) iret = ierr
           print *,'write l=',l,' clwmr,ierr=',ierr
+        endif
+      enddo
+    endif
+!rwmr
+    call nemsio_searchrecv(gfile,jrec,'rwmr','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        tmp = reshape(nemsiodata%q(:,:,l,ntoz),(/fieldsize/) )
+        call nemsio_writerecv(gfile,'rwmr','mid layer',l,tmp,iret=ierr)
+        if(ierr /= 0) then
+          if(present(iret)) iret = ierr
+          print *,'write l=',l,'rwmr,ierr=',ierr
+        endif
+      enddo
+    endif
+!icmr
+    call nemsio_searchrecv(gfile,jrec,'icmr','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        tmp = reshape(nemsiodata%q(:,:,l,ntcw),(/fieldsize/) )
+        call nemsio_writerecv(gfile,'icmr','mid layer',l,tmp,iret=ierr)
+        if(ierr /= 0) then
+          if(present(iret)) iret = ierr
+          print *,'write l=',l,' icmr,ierr=',ierr
+        endif
+      enddo
+    endif
+!snwr
+    call nemsio_searchrecv(gfile,jrec,'snwr','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        tmp = reshape(nemsiodata%q(:,:,l,ntoz),(/fieldsize/) )
+        call nemsio_writerecv(gfile,'snwr','mid layer',l,tmp,iret=ierr)
+        if(ierr /= 0) then
+          if(present(iret)) iret = ierr
+          print *,'write l=',l,'snwr,ierr=',ierr
+        endif
+      enddo
+    endif
+!dzdt
+    call nemsio_searchrecv(gfile,jrec,'dzdt','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        tmp = reshape(nemsiodata%q(:,:,l,ntcw),(/fieldsize/) )
+        call nemsio_writerecv(gfile,'dzdt','mid layer',l,tmp,iret=ierr)
+        if(ierr /= 0) then
+          if(present(iret)) iret = ierr
+          print *,'write l=',l,' dzdt,ierr=',ierr
+        endif
+      enddo
+    endif
+!delz
+    call nemsio_searchrecv(gfile,jrec,'delz','mid layer',1,iret=ierr)
+    if(ierr == 0) then
+      do l=1,lm
+        tmp = reshape(nemsiodata%q(:,:,l,ntcw),(/fieldsize/) )
+        call nemsio_writerecv(gfile,'delz','mid layer',l,tmp,iret=ierr)
+        if(ierr /= 0) then
+          if(present(iret)) iret = ierr
+          print *,'write l=',l,' delz,ierr=',ierr
         endif
       enddo
     endif
